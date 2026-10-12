@@ -25,6 +25,14 @@ class StudentStatus:
         self.font_status = None
         self.lock = threading.Lock()
         self.current = None
+        self.title = os.environ.get("EV3_STUDENT_LCD_TITLE", "STUDENT")
+        self.footer = os.environ.get("EV3_STUDENT_LCD_PROGRAM", "main.py")
+        self.status_labels = {
+            "STARTING": os.environ.get("EV3_STUDENT_LCD_STARTING", "STARTING"),
+            "RUNNING": os.environ.get("EV3_STUDENT_LCD_RUNNING", "RUNNING"),
+            "STOPPED": os.environ.get("EV3_STUDENT_LCD_STOPPED", "STOPPED"),
+            "ERROR": os.environ.get("EV3_STUDENT_LCD_ERROR", "ERROR"),
+        }
 
     @staticmethod
     def _font(candidates):
@@ -64,10 +72,10 @@ class StudentStatus:
 
             # High-contrast header, large state, small program name.
             self.display.draw.rectangle((0, 0, width - 1, 30), fill="black")
-            self._centered_text("STUDENT", 7, self.font_header, "white")
-            self._centered_text(self.current, 47, self.font_status)
+            self._centered_text(self.title, 7, self.font_header, "white")
+            self._centered_text(self.status_labels.get(self.current, self.current), 47, self.font_status)
             self.display.draw.line((9, 91, width - 10, 91), fill="black")
-            self._centered_text("main.py", 101, self.font_header)
+            self._centered_text(self.footer, 101, self.font_header)
 
             self.display.update()
         except Exception as exc:
@@ -93,6 +101,68 @@ class StudentStatus:
             print("STUDENT_STATUS={}".format(value))
             self._draw_lcd()
 
+
+class StudentLed:
+    """Optional EV3 key LEDs; DEFAULT delegates to brickrun's heartbeat."""
+
+    def __init__(self):
+        self.color = os.environ.get("EV3_STUDENT_LED_COLOR", "DEFAULT")
+        self.effect = os.environ.get("EV3_STUDENT_LED_EFFECT", "DEFAULT")
+        if self.effect == "DEFAULT" and self.color != "DEFAULT":
+            self.effect = "BLINK"
+        if self.color == "DEFAULT" and self.effect != "DEFAULT":
+            self.color = "GREEN"
+        self.leds = None
+        self.thread = None
+
+    def _color(self, color):
+        for group in ("LEFT", "RIGHT"):
+            self.leds.set_color(group, color)
+
+    def start(self, finished):
+        if self.effect == "DEFAULT":
+            return
+
+        try:
+            from ev3dev2.led import Leds
+            self.leds = Leds()
+            # brickrun enables the green heartbeat trigger before launching us.
+            # Detach all four LED channels before setting a custom color.
+            for group in ("LEFT", "RIGHT"):
+                self.leds.set(group, trigger="none")
+        except Exception as exc:
+            print("LED_STATUS_UNAVAILABLE: {}".format(exc), file=sys.stderr)
+            self.leds = None
+            return
+
+        def keep_color():
+            try:
+                if self.effect == "OFF":
+                    self._color("BLACK")
+                elif self.effect == "SOLID":
+                    self._color(self.color)
+                elif self.effect == "BLINK":
+                    while not finished.is_set():
+                        self._color(self.color)
+                        if finished.wait(0.5):
+                            break
+                        self._color("BLACK")
+                        if finished.wait(0.5):
+                            break
+            except Exception as exc:
+                # The LED is informational; failures must never stop a robot.
+                print("LED_STATUS_UNAVAILABLE: {}".format(exc), file=sys.stderr)
+
+        self.thread = threading.Thread(target=keep_color)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def stop(self):
+        # The process exits immediately afterward, when brickrun restores LEDs.
+        if self.thread is not None:
+            self.thread.join(1.0)
+
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: student_runner.py /absolute/path/main.py", file=sys.stderr)
@@ -100,6 +170,7 @@ def main():
 
     main_file = os.path.abspath(sys.argv[1])
     status = StudentStatus(main_file)
+    led = StudentLed()
     finished = threading.Event()
 
     def stop_on_term(signum, frame):
@@ -115,6 +186,7 @@ def main():
         output.write("{}\n".format(os.getpid()))
 
     status.set("STARTING")
+    led.start(finished)
 
     def mark_running():
         # An alive interpreter is RUNNING, not necessarily ready to drive.
@@ -139,6 +211,7 @@ def main():
         raise
     finally:
         finished.set()
+        led.stop()
         status.set(final_status)
         try:
             with open(runtime_pid_file, "r") as source:
