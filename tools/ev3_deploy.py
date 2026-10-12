@@ -552,7 +552,7 @@ def cmd_deploy(target, config):
 cd {remote}
 rm -f student.log
 
-nohup env PYTHONPATH={remote} {python} -u {main} \
+nohup env PYTHONPATH={remote} PYTHONIOENCODING=utf-8 {python} -u {main} \
     > {log} 2>&1 < /dev/null &
 
 pid=$!
