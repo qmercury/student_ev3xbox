@@ -16,8 +16,6 @@ import threading
 class StudentStatus:
     """Keep an EV3 lifecycle status visible without editing student main.py."""
 
-    REFRESH_SECONDS = 0.6
-
     def __init__(self, main_file):
         self.main_file = main_file
         self.status_file = os.path.join(os.path.dirname(main_file), ".student-status")
@@ -95,23 +93,6 @@ class StudentStatus:
             print("STUDENT_STATUS={}".format(value))
             self._draw_lcd()
 
-    def refresh_until(self, finished):
-        # Brickman/other framebuffer users may repaint over our one-time draw.
-        # Re-submit the cached image at a low rate while Python is running.
-        # Do not render fonts repeatedly, or block student motor code with work.
-        while not finished.wait(self.REFRESH_SECONDS):
-            with self.lock:
-                if not self.lcd_enabled or self.display is None:
-                    continue
-                if self.current not in ("STARTING", "RUNNING"):
-                    continue
-                try:
-                    self.display.update()
-                except Exception as exc:
-                    print("LCD_REFRESH_UNAVAILABLE: {}".format(exc), file=sys.stderr)
-                    self.lcd_enabled = False
-
-
 def main():
     if len(sys.argv) != 2:
         print("Usage: student_runner.py /absolute/path/main.py", file=sys.stderr)
@@ -127,11 +108,13 @@ def main():
 
     signal.signal(signal.SIGTERM, stop_on_term)
 
-    status.set("STARTING")
+    # brickrun itself is a launcher process; record the Python process as
+    # well so that the deploy tool can stop it if the launcher gets stuck.
+    runtime_pid_file = os.path.join(os.path.dirname(main_file), ".student.runtime.pid")
+    with open(runtime_pid_file, "w") as output:
+        output.write("{}\n".format(os.getpid()))
 
-    lcd_keeper = threading.Thread(target=status.refresh_until, args=(finished,))
-    lcd_keeper.daemon = True
-    lcd_keeper.start()
+    status.set("STARTING")
 
     def mark_running():
         # An alive interpreter is RUNNING, not necessarily ready to drive.
@@ -157,6 +140,13 @@ def main():
     finally:
         finished.set()
         status.set(final_status)
+        try:
+            with open(runtime_pid_file, "r") as source:
+                recorded_pid = source.read().strip()
+            if recorded_pid == str(os.getpid()):
+                os.unlink(runtime_pid_file)
+        except OSError:
+            pass
 
     return 0
 
