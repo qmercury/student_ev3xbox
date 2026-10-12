@@ -8,5 +8,13 @@
   "python": "python3",
   "connect_timeout": 5,
   "sync_library": true,
-  "lcd_status": true
+  "lcd_status": true,
+  "lcd_title": "STUDENT",
+  "lcd_program": "main.py",
+  "lcd_starting_text": "STARTING",
+  "lcd_running_text": "RUNNING",
+  "lcd_stopped_text": "STOPPED",
+  "lcd_error_text": "ERROR",
+  "led_color": "DEFAULT",
+  "led_effect": "DEFAULT"
 }
