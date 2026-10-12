@@ -29,6 +29,8 @@ Xbox를 사용하는 경우에는 배포 도구가 이 프로젝트의 `ev3xbox.
 
 자동 표시가 학생 코드의 직접적인 LCD 사용을 방해한다면 `.vscode/ev3-target.json`에서 `"lcd_status": false`로 설정하세요. LCD 출력 실패는 학생 Python 프로그램의 실행을 방해하지 않도록 처리합니다.
 
+학생별 `.vscode/ev3-target.json`의 `lcd_title`, `lcd_program`, `lcd_starting_text`, `lcd_running_text`, `lcd_stopped_text`, `lcd_error_text`, `led_color`, `led_effect` 값을 수정하여 글씨와 버튼 LED를 변경할 수 있습니다. 자세한 설정과 예시는 프로젝트 [README.md](../../README.md)를 참고하세요. 변경 사항은 다음 업로드 시 적용됩니다.
+
 
 ---
 
