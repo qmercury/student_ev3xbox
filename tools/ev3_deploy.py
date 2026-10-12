@@ -67,6 +67,39 @@ def load_config(path):
     config.setdefault("sync_library", True)
     config.setdefault("lcd_status", True)
 
+    # Keep names readable on the 178x128 monochrome EV3 LCD. The supplied
+    # bitmap fonts do not reliably cover Korean/non-ASCII glyphs.
+    lcd_options = {
+        "lcd_title": ("STUDENT", 16),
+        "lcd_program": ("main.py", 18),
+        "lcd_starting_text": ("STARTING", 10),
+        "lcd_running_text": ("RUNNING", 10),
+        "lcd_stopped_text": ("STOPPED", 10),
+        "lcd_error_text": ("ERROR", 10),
+    }
+    for key, (default, max_length) in lcd_options.items():
+        text_value = config.get(key, default)
+        if not isinstance(text_value, str):
+            fail("{} must be a string.".format(key))
+        if not (1 <= len(text_value) <= max_length):
+            fail("{} must be 1 to {} characters long.".format(key, max_length))
+        if not text_value.isascii() if hasattr(text_value, "isascii") else any(ord(ch) >= 128 for ch in text_value):
+            fail("{} must use English letters/numbers (ASCII), not Korean.".format(key))
+        if any(ord(ch) < 32 or ord(ch) == 127 for ch in text_value):
+            fail("{} cannot contain newlines or control characters.".format(key))
+        config[key] = text_value
+
+    allowed_colors = ("DEFAULT", "RED", "GREEN", "AMBER", "ORANGE", "YELLOW")
+    allowed_effects = ("DEFAULT", "BLINK", "SOLID", "OFF")
+    for key, choices, default in (
+        ("led_color", allowed_colors, "DEFAULT"),
+        ("led_effect", allowed_effects, "DEFAULT"),
+    ):
+        value = config.get(key, default)
+        if not isinstance(value, str) or value.upper() not in choices:
+            fail("{} must be one of: {}.".format(key, ", ".join(choices)))
+        config[key] = value.upper()
+
     return config, config_path
 
 
@@ -608,6 +641,10 @@ cd {remote}
 rm -f {log} {statusfile} {runtime_pidfile}
 
 nohup env PYTHONPATH={remote} PYTHONIOENCODING=utf-8 EV3_STUDENT_LCD={lcd_status} \
+    EV3_STUDENT_LCD_TITLE={lcd_title} EV3_STUDENT_LCD_PROGRAM={lcd_program} \
+    EV3_STUDENT_LCD_STARTING={lcd_starting_text} EV3_STUDENT_LCD_RUNNING={lcd_running_text} \
+    EV3_STUDENT_LCD_STOPPED={lcd_stopped_text} EV3_STUDENT_LCD_ERROR={lcd_error_text} \
+    EV3_STUDENT_LED_COLOR={led_color} EV3_STUDENT_LED_EFFECT={led_effect} \
     brickrun -r -- {python} -u {runner} {main} \
     > {log} 2>&1 < /dev/null &
 
@@ -659,6 +696,14 @@ fi
         statusfile=q(target.remote_dir.rstrip("/") + "/.student-status"),
         runtime_pidfile=q(target.remote_dir.rstrip("/") + "/.student.runtime.pid"),
         lcd_status="1" if config.get("lcd_status", True) else "0",
+        lcd_title=q(config["lcd_title"]),
+        lcd_program=q(config["lcd_program"]),
+        lcd_starting_text=q(config["lcd_starting_text"]),
+        lcd_running_text=q(config["lcd_running_text"]),
+        lcd_stopped_text=q(config["lcd_stopped_text"]),
+        lcd_error_text=q(config["lcd_error_text"]),
+        led_color=q(config["led_color"]),
+        led_effect=q(config["led_effect"]),
     )
 
     target.remote(start_script)
