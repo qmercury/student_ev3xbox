@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "EV3: 업로드 및 실행",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/tools/ev3_deploy.py",
+      "args": [
+        "deploy"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

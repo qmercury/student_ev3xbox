@@ -1,0 +1,7 @@
+{
+  "python.analysis.extraPaths": [
+    "./ev3"
+  ],
+  "python.analysis.stubPath": "./typings",
+  "python.analysis.typeCheckingMode": "basic"
+}
