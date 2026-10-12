@@ -20,6 +20,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / ".vscode" / "ev3-target.json"
 EV3_SUPPORT_FILES = [ROOT / "ev3" / "ev3xbox.py"]
+EV3_RUNNER_FILE = ROOT / "ev3" / "student_runner.py"
 
 DISCOVERY_PORT = 5005
 DISCOVERY_TIMEOUT_SECONDS = 4.0
@@ -64,6 +65,7 @@ def load_config(path):
     config.setdefault("python", "python3")
     config.setdefault("connect_timeout", 5)
     config.setdefault("sync_library", True)
+    config.setdefault("lcd_status", True)
 
     return config, config_path
 
@@ -467,10 +469,17 @@ if [ -f "$pidfile" ]; then
 else
     echo "STUDENT_PROGRAM=NOT_RUNNING"
 fi
+
+statusfile={statusfile}
+if [ -r "$statusfile" ]; then
+    printf 'STUDENT_STATUS='
+    cat "$statusfile"
+fi
 """.format(
         python=q(target.python),
         pidfile=q(target.remote_pid),
         main=q(target.remote_main),
+        statusfile=q(target.remote_dir.rstrip("/") + "/.student-status"),
     )
 
     target.remote(script)
@@ -506,6 +515,9 @@ fi
 
 def cmd_deploy(target, config):
     main_file = resolve_main(config)
+
+    if not EV3_RUNNER_FILE.is_file():
+        fail("EV3 student status runner not found: {}".format(EV3_RUNNER_FILE))
 
     if config.get("sync_library", True):
         missing_support = [
@@ -547,41 +559,66 @@ def cmd_deploy(target, config):
             )
             target.copy_file(support_file, remote_path)
 
+    # Always install the lifecycle runner, even when sync_library is false.
+    # This does not touch the teacher's xbox_service.py.
+    target.copy_file(EV3_RUNNER_FILE, target.remote_dir.rstrip("/") + "/student_runner.py")
+
     print("[EV3] 5/5 Starting student program ...")
     start_script = """
 cd {remote}
-rm -f student.log
+rm -f {log} {statusfile}
 
-nohup env PYTHONPATH={remote} PYTHONIOENCODING=utf-8 {python} -u {main} \
+nohup env PYTHONPATH={remote} PYTHONIOENCODING=utf-8 EV3_STUDENT_LCD={lcd_status} \
+    {python} -u {runner} {main} \
     > {log} 2>&1 < /dev/null &
 
 pid=$!
 printf '%s\\n' "$pid" > {pidfile}
 
-sleep 0.35
+attempt=0
+while [ "$attempt" -lt 50 ]; do
+    current_status=$(cat {statusfile} 2>/dev/null || true)
+    case "$current_status" in
+        RUNNING)
+            echo "STUDENT_PROGRAM=RUNNING pid=$pid"
+            echo "STUDENT_STATUS=RUNNING (Python executing; Xbox readiness not checked)"
+            break
+            ;;
+        ERROR)
+            echo "STUDENT_PROGRAM=ERROR"
+            tail -n 40 {log}
+            exit 3
+            ;;
+        STOPPED)
+            echo "STUDENT_PROGRAM=FINISHED"
+            tail -n 20 {log}
+            break
+            ;;
+    esac
 
-if kill -0 "$pid" 2>/dev/null; then
-    echo "STUDENT_PROGRAM=RUNNING pid=$pid"
-else
-    rm -f {pidfile}
-
-    if grep -q 'Traceback (most recent call last)' {log} 2>/dev/null; then
-        echo "STUDENT_PROGRAM=ERROR"
+    if ! kill -0 "$pid" 2>/dev/null; then
+        echo "STUDENT_PROGRAM=EXITED_BEFORE_READY"
         tail -n 40 {log}
         exit 3
     fi
 
-    echo "STUDENT_PROGRAM=FINISHED"
-    if [ -s {log} ]; then
-        tail -n 40 {log}
-    fi
+    sleep 0.1
+    attempt=$((attempt + 1))
+done
+
+if [ "$attempt" -ge 50 ]; then
+    echo "STUDENT_PROGRAM=STARTING pid=$pid"
+    echo "Check EV3: logs to see why Python startup is delayed."
 fi
 """.format(
         remote=q(target.remote_dir),
         python=q(target.python),
+        runner=q(target.remote_dir.rstrip("/") + "/student_runner.py"),
         main=q(target.remote_main),
         log=q(target.remote_log),
         pidfile=q(target.remote_pid),
+        statusfile=q(target.remote_dir.rstrip("/") + "/.student-status"),
+        lcd_status="1" if config.get("lcd_status", True) else "0",
     )
 
     target.remote(start_script)
