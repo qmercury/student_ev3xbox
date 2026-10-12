@@ -285,47 +285,86 @@ for motor in /sys/class/tacho-motor/motor*; do
 done
 '''
 
+    # brickrun manages a separate Python process through console-runner.
+    # Send SIGTERM to brickrun first; it forwards the signal to Python.
+    # Keep the real Python PID for a carefully-checked fallback.
     return """
 pidfile={pidfile}
+runtime_pidfile={runtime_pidfile}
 main={main}
+runner={runner}
 
-if [ -f "$pidfile" ]; then
-    pid=$(cat "$pidfile" 2>/dev/null || true)
+read_cmdline() {{
+    process_pid="$1"
+    if [ -r "/proc/$process_pid/cmdline" ]; then
+        tr '\\000' ' ' < "/proc/$process_pid/cmdline" 2>/dev/null || true
+    fi
+}}
 
-    case "$pid" in
-        ''|*[!0-9]*)
-            ;;
-        *)
-            if [ -r "/proc/$pid/cmdline" ]; then
-                cmdline=$(tr '\\000' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)
-            else
-                cmdline=""
-            fi
-
-            case "$cmdline" in
-                *"$main"*)
-                    kill "$pid" 2>/dev/null || true
-
-                    count=0
-                    while kill -0 "$pid" 2>/dev/null && [ "$count" -lt 20 ]; do
-                        sleep 0.1
-                        count=$((count + 1))
-                    done
-
-                    if kill -0 "$pid" 2>/dev/null; then
-                        kill -9 "$pid" 2>/dev/null || true
-                    fi
-                    ;;
-            esac
-            ;;
+is_student_process() {{
+    process_pid="$1"
+    case "$process_pid" in
+        ''|*[!0-9]*) return 1 ;;
     esac
+    process_cmdline=$(read_cmdline "$process_pid")
+    case "$process_cmdline" in
+        *"$runner"*"$main"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}}
 
-    rm -f "$pidfile"
+launcher_pid=$(cat "$pidfile" 2>/dev/null || true)
+
+if is_student_process "$launcher_pid"; then
+    # For brickrun this is forwarded to the student Python process.
+    kill "$launcher_pid" 2>/dev/null || true
+
+    count=0
+    while is_student_process "$launcher_pid" && [ "$count" -lt 20 ]; do
+        sleep 0.1
+        count=$((count + 1))
+    done
 fi
 
+# A stuck brickrun launcher must not leave an orphaned Python motor process.
+runtime_pid=$(cat "$runtime_pidfile" 2>/dev/null || true)
+if is_student_process "$runtime_pid" && [ "$runtime_pid" != "$launcher_pid" ]; then
+    kill "$runtime_pid" 2>/dev/null || true
+
+    count=0
+    while is_student_process "$runtime_pid" && [ "$count" -lt 10 ]; do
+        sleep 0.1
+        count=$((count + 1))
+    done
+
+    if is_student_process "$runtime_pid"; then
+        kill -9 "$runtime_pid" 2>/dev/null || true
+        sleep 0.2
+    fi
+fi
+
+# Only terminate the launcher forcefully after the separately launched
+# Python runtime has had its own chance to stop.
+if is_student_process "$launcher_pid"; then
+    if is_student_process "$runtime_pid" && [ "$runtime_pid" != "$launcher_pid" ]; then
+        echo "STUDENT_STOP_ERROR=Python runtime is still alive" >&2
+        exit 4
+    fi
+    kill -9 "$launcher_pid" 2>/dev/null || true
+    sleep 0.2
+fi
+
+if is_student_process "$launcher_pid" || is_student_process "$runtime_pid"; then
+    echo "STUDENT_STOP_ERROR=Student process is still alive" >&2
+    exit 4
+fi
+
+rm -f "$pidfile" "$runtime_pidfile"
 {motor_stop}
 """.format(
         pidfile=q(target.remote_pid),
+        runtime_pidfile=q(target.remote_dir.rstrip("/") + "/.student.runtime.pid"),
+        runner=q(target.remote_dir.rstrip("/") + "/student_runner.py"),
         main=q(target.remote_main),
         motor_stop=motor_stop,
     )
@@ -532,8 +571,8 @@ def cmd_deploy(target, config):
 
     print("[EV3] Target: {}".format(target.login))
     print("[EV3] Source: {}".format(main_file))
-    print("[EV3] 1/5 Checking SSH ...")
-    target.remote("true")
+    print("[EV3] 1/5 Checking SSH and brickrun ...")
+    target.remote("command -v brickrun >/dev/null || { echo 'BRICKRUN_NOT_INSTALLED' >&2; exit 3; }")
 
     print("[EV3] 2/5 Stopping previous student program ...")
     target.remote(stop_student_script(target, stop_motors=True))
@@ -566,10 +605,10 @@ def cmd_deploy(target, config):
     print("[EV3] 5/5 Starting student program ...")
     start_script = """
 cd {remote}
-rm -f {log} {statusfile}
+rm -f {log} {statusfile} {runtime_pidfile}
 
 nohup env PYTHONPATH={remote} PYTHONIOENCODING=utf-8 EV3_STUDENT_LCD={lcd_status} \
-    {python} -u {runner} {main} \
+    brickrun -r -- {python} -u {runner} {main} \
     > {log} 2>&1 < /dev/null &
 
 pid=$!
@@ -618,6 +657,7 @@ fi
         log=q(target.remote_log),
         pidfile=q(target.remote_pid),
         statusfile=q(target.remote_dir.rstrip("/") + "/.student-status"),
+        runtime_pidfile=q(target.remote_dir.rstrip("/") + "/.student.runtime.pid"),
         lcd_status="1" if config.get("lcd_status", True) else "0",
     )
 
