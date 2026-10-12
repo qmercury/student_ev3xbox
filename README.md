@@ -1,5 +1,7 @@
 # EV3 Xbox · 학생용 프로젝트
 
+**문서 목록:** [docs/README.md](docs/README.md) · **전체 개발 현황:** [원본 로드맵](https://github.com/qmercury/ev3XboxConnect/blob/main/docs/NEXT_STEPS.md)
+
 이 저장소는 **학생이 자신의 LEGO EV3(ev3dev / Python 3.5.3)** 로봇 프로그램을 작성하고 VSCode에서 배포하기 위한 공간입니다.
 
 학생은 **`main.py`에 자신의 주행·슈터·센서 알고리즘을 직접 구현**합니다. 완성된 로봇축구 알고리즘을 제공하지 않습니다. Xbox 입력은 교사용 Relay와 EV3의 `xbox_service.py`가 전달하며, 학생은 `from ev3xbox import XboxController, XboxButton`만 사용합니다.
