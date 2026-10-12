@@ -4,6 +4,56 @@
 
 학생은 **`main.py`에 자신의 주행·슈터·센서 알고리즘을 직접 구현**합니다. 완성된 로봇축구 알고리즘을 제공하지 않습니다. Xbox 입력은 교사용 Relay와 EV3의 `xbox_service.py`가 전달하며, 학생은 `from ev3xbox import XboxController, XboxButton`만 사용합니다.
 
+## 처음 다운로드: 터미널에서 GitHub 저장소 복제하기
+
+**한 번만** `git clone`을 실행하면 됩니다. 같은 노트북에서 이미 저장소를 받았다면 다시 복제하지 말고 아래 **업데이트** 명령을 사용하세요. `git clone`은 GitHub 소스 파일을 노트북에 복사하는 명령이며, EV3에 프로그램을 업로드하는 명령은 아닙니다.
+
+**사전 준비:** [Git](https://git-scm.com/downloads), [VSCode](https://code.visualstudio.com/), 노트북용 Python 3가 필요합니다. Windows는 PowerShell, Mac은 터미널(zsh)을 사용합니다. 처음 내려받을 때는 인터넷에 연결되어 있어야 합니다.
+
+### Mac 터미널 — 아래 블록 전체를 복사해서 붙여넣기
+
+```bash
+mkdir -p ~/Documents/EV3_Projects
+cd ~/Documents/EV3_Projects
+git clone https://github.com/qmercury/student_ev3xbox.git
+cd student_ev3xbox
+cp .vscode/ev3-target.example.json .vscode/ev3-target.json
+```
+
+- `mkdir -p`: 문서 폴더 안에 프로젝트 저장 장소를 만듭니다.
+- `cd`: 작업할 폴더로 이동합니다.
+- `git clone`: 학생용 GitHub 저장소를 다운로드합니다.
+- `cp`: 학생 개인용 EV3 연결 설정을 예제에서 복사해 만듭니다.
+
+### Windows PowerShell — 아래 블록 전체를 복사해서 붙여넣기
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$HOME\Documents\EV3_Projects" | Out-Null
+Set-Location "$HOME\Documents\EV3_Projects"
+git clone https://github.com/qmercury/student_ev3xbox.git
+Set-Location .\student_ev3xbox
+Copy-Item .\.vscode\ev3-target.example.json .\.vscode\ev3-target.json
+```
+
+- `New-Item`: 프로젝트 폴더를 만듭니다.
+- `Set-Location`: 해당 폴더로 이동합니다.
+- `git clone`: 학생용 GitHub 저장소를 다운로드합니다.
+- `Copy-Item`: 학생 개인용 EV3 연결 설정을 복사해 만듭니다.
+
+**복제 후 VSCode로 열기:** 터미널에서 이 저장소 폴더 안에 있는 상태로 `code .`를 실행하거나, VSCode의 **파일 → 폴더 열기**에서 `student_ev3xbox` 폴더를 선택합니다. `code` 명령을 인식하지 못하면 GUI에서 폴더를 열면 됩니다. Mac에서는 VSCode 명령 팔레트의 **Shell Command: Install 'code' command in PATH**를 사용할 수도 있습니다.
+
+**처음 사용할 때:** `.vscode/ev3-target.json`에서 자기 EV3의 `robot_id`와 `host`를 확인하고, VSCode의 **터미널 → 작업 실행 → EV3: 최초 연결 설정**을 한 번 실행합니다. 이후 `main.py`를 작성하고 **EV3: 업로드 및 실행**(기본 빌드 작업)을 사용합니다. 학생 연결 설정 파일은 GitHub로 업로드되지 않습니다.
+
+### 이미 복제했다면: 최신 코드 업데이트
+
+이미 복제한 `student_ev3xbox` 폴더에서 아래 명령 **한 줄만** 실행합니다. `git clone`을 다시 실행할 필요가 없습니다.
+
+```bash
+git pull --ff-only
+```
+
+`git pull`은 GitHub의 새 코드를 가져오며, 개인용 `.vscode/ev3-target.json`은 Git 관리 대상이 아니므로 기본적으로 유지됩니다. 학생이 `main.py`를 직접 수정한 상태라면 충돌을 피하기 위해 중요한 코드를 먼저 보관하세요. 폴더가 이미 존재한다는 오류가 나면 중복 복제를 하지 말고 기존 폴더에서 작업합니다.
+
 ## 사용 순서
 
 1. 이 저장소를 VSCode로 엽니다.
