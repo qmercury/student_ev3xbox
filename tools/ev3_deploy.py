@@ -67,6 +67,11 @@ def load_config(path):
     config.setdefault("sync_library", True)
     config.setdefault("lcd_status", True)
 
+    return config, config_path
+
+
+def validate_display_config(config):
+    """Validate customization for DEPLOY only; never block emergency STOP."""
     # Keep names readable on the 178x128 monochrome EV3 LCD. The supplied
     # bitmap fonts do not reliably cover Korean/non-ASCII glyphs.
     lcd_options = {
@@ -100,7 +105,8 @@ def load_config(path):
             fail("{} must be one of: {}.".format(key, ", ".join(choices)))
         config[key] = value.upper()
 
-    return config, config_path
+
+    return config
 
 
 def require_program(name):
@@ -586,6 +592,8 @@ fi
 
 
 def cmd_deploy(target, config):
+    # Invalid cosmetic options must not interfere with check/stop/logs.
+    validate_display_config(config)
     main_file = resolve_main(config)
 
     if not EV3_RUNNER_FILE.is_file():
