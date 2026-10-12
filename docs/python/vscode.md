@@ -29,6 +29,8 @@ Xbox를 사용하는 경우에는 배포 도구가 이 프로젝트의 `ev3xbox.
 
 자동 표시가 학생 코드의 직접적인 LCD 사용을 방해한다면 `.vscode/ev3-target.json`에서 `"lcd_status": false`로 설정하세요. LCD 출력 실패는 학생 Python 프로그램의 실행을 방해하지 않도록 처리합니다.
 
+**처음 복제할 때는** [student_ev3xbox README의 Mac/Windows 복제 명령](../../README.md#처음-다운로드-터미널에서-github-저장소-복제하기)을 먼저 실행하세요. `main.py`는 저장소 루트에 있으며, 예제 JSON에서 개인 설정 파일을 만든 뒤 자신의 Robot ID를 설정합니다.
+
 학생별 `.vscode/ev3-target.json`의 `lcd_title`, `lcd_program`, `lcd_starting_text`, `lcd_running_text`, `lcd_stopped_text`, `lcd_error_text`, `led_color`, `led_effect` 값을 수정하여 글씨와 버튼 LED를 변경할 수 있습니다. 자세한 설정과 예시는 프로젝트 [README.md](../../README.md)를 참고하세요. 변경 사항은 다음 업로드 시 적용됩니다.
 
 
@@ -111,7 +113,16 @@ main 작성
   "main_file": "main.py",
   "python": "python3",
   "connect_timeout": 5,
-  "sync_library": true
+  "sync_library": true,
+  "lcd_status": true,
+  "lcd_title": "STUDENT",
+  "lcd_program": "main.py",
+  "lcd_starting_text": "STARTING",
+  "lcd_running_text": "RUNNING",
+  "lcd_stopped_text": "STOPPED",
+  "lcd_error_text": "ERROR",
+  "led_color": "DEFAULT",
+  "led_effect": "DEFAULT"
 }
 ```
 
