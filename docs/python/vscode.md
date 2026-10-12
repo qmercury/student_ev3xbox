@@ -25,7 +25,7 @@ Xbox를 사용하는 경우에는 배포 도구가 이 프로젝트의 `ev3xbox.
 
 ### EV3 본체에 실행 상태 표시
 
-새 버전은 학생 코드와 함께 `student_runner.py`를 업로드합니다. 실행하면 EV3 LCD에 `STARTING` → `RUNNING`을 표시하고, 종료하면 `STOPPED`, 오류로 종료하면 `ERROR`를 표시합니다. `RUNNING`은 Python 코드가 실행 중임을 뜻하며 Xbox 입력 수신 및 모터 초기화까지 확인했다는 뜻은 아닙니다.
+새 버전은 학생 코드와 함께 `student_runner.py`를 업로드합니다. 실행하면 EV3 LCD에 `STARTING` → `RUNNING`을 표시하고, 종료하면 `STOPPED`, 오류로 종료하면 `ERROR`를 표시합니다. 실행 중 LCD가 다른 화면으로 바뀌더라도 약 0.6초마다 큰 글꼴의 상태 화면을 다시 그립니다. `RUNNING`은 Python 코드가 실행 중임을 뜻하며 Xbox 입력 수신 및 모터 초기화까지 확인했다는 뜻은 아닙니다.
 
 자동 표시가 학생 코드의 직접적인 LCD 사용을 방해한다면 `.vscode/ev3-target.json`에서 `"lcd_status": false`로 설정하세요. LCD 출력 실패는 학생 Python 프로그램의 실행을 방해하지 않도록 처리합니다.
 
