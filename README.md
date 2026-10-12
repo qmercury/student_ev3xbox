@@ -34,8 +34,10 @@
 
 - `STARTING`: Python 코드 실행 시작 중
 - `RUNNING`: Python 코드가 실행 중이라는 표시 (Xbox 연결/모터 준비 완료를 보장하지 않음)
-  - LCD 해상도(178×128)에 맞는 **큰 글꼴**로 표시하고, 실행 중 화면이 다른 프로그램에 의해 덮여도 약 **0.6초 간격으로 복원**합니다.
+  - LCD 해상도(178×128)에 맞는 **큰 글꼴**로 표시합니다. `brickrun`이 실행 중 기본 메뉴 대신 학생 프로그램의 화면을 유지하며, 상태 변경 시에만 새로 그립니다.
 - `STOPPED`: 정상 종료 또는 `EV3: 정지`로 종료
 - `ERROR`: 처리되지 않은 Python 오류로 종료
 
 학생이 LCD를 직접 사용하는 프로젝트라면 개인 설정 `.vscode/ev3-target.json`에 `"lcd_status": false`를 설정하면 자동 화면 표시만 비활성화됩니다. 자동 표시를 끄더라도 업로드/실행/종료 및 로그는 그대로 작동합니다. EV3의 기본 화면 관리 프로그램이 LCD를 다시 그리거나 접근 권한이 제한된 경우에는 상태 화면이 보이지 않을 수 있으며, 이때 학생 코드는 계속 실행됩니다.
+
+<!-- brickrun note: it controls EV3 LCD ownership, while student_runner.py reports STARTING/RUNNING/STOPPED/ERROR. -->
