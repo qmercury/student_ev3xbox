@@ -83,7 +83,7 @@ def load_config(path):
             fail("{} must be a string.".format(key))
         if not (1 <= len(text_value) <= max_length):
             fail("{} must be 1 to {} characters long.".format(key, max_length))
-        if not text_value.isascii() if hasattr(text_value, "isascii") else any(ord(ch) >= 128 for ch in text_value):
+        if any(ord(ch) > 127 for ch in text_value):
             fail("{} must use English letters/numbers (ASCII), not Korean.".format(key))
         if any(ord(ch) < 32 or ord(ch) == 127 for ch in text_value):
             fail("{} cannot contain newlines or control characters.".format(key))
