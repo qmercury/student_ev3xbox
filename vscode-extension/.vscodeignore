@@ -1,0 +1,7 @@
+**/.git/**
+**/.github/**
+**/test/**
+**/tests/**
+*.vsix
+README.md
+node_modules/.cache/**
