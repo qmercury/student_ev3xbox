@@ -6,6 +6,18 @@
 
 학생은 **`main.py`에 자신의 주행·슈터·센서 알고리즘을 직접 구현**합니다. 완성된 로봇축구 알고리즘을 제공하지 않습니다. Xbox 입력은 교사용 Relay와 EV3의 `xbox_service.py`가 전달하며, 학생은 `from ev3xbox import XboxController, XboxButton`만 사용합니다.
 
+## Mac·Windows 공통 그래픽 최초 연결 도우미
+
+**SSH 명령을 직접 입력하지 않아도 됩니다.** VSCode 안에서 EV3를 자동 검색해 선택하고, 최초 인증만 교사가 도와주는 확장 기능을 제공합니다.
+
+- 확장 설치 파일 만들기/설치하기: [vscode-extension/README.md](vscode-extension/README.md)
+- VSCode 명령 팔레트(Ctrl+Shift+P / Mac Cmd+Shift+P) → **EV3: 최초 연결 도우미 열기**
+- **EV3 자동 검색** → 자신의 EV3 선택 → **선택한 EV3 최초 연결**
+- 교사가 처음 한 번 EV3 비밀번호를 입력합니다(미변경 기본값은 `maker`). 비밀번호는 저장되지 않습니다.
+- 연결 준비 완료 후 **Ctrl + Shift + B**로 학생 프로그램을 업로드 및 실행합니다.
+
+> **사전 준비:** EV3에 교사용 Xbox 상주 서비스가 설치·실행되어 있어야 자동 검색할 수 있습니다. 교사 PC에서 VSIX를 한 번 패키징하여 Windows/Mac에 배포해야 합니다. 확장을 설치하지 않은 기존 SSH 작업 흐름도 그대로 사용할 수 있습니다.
+
 ## 처음 다운로드: 터미널에서 GitHub 저장소 복제하기
 
 **한 번만** `git clone`을 실행하면 됩니다. 같은 노트북에서 이미 저장소를 받았다면 다시 복제하지 말고 아래 **업데이트** 명령을 사용하세요. `git clone`은 GitHub 소스 파일을 노트북에 복사하는 명령이며, EV3에 프로그램을 업로드하는 명령은 아닙니다.
