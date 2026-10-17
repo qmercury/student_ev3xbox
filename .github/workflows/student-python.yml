@@ -17,3 +17,25 @@ jobs:
         run: python -m compileall -q tools ev3 tests
       - name: Run regression tests
         run: python -m unittest discover -s tests -v
+
+  vscode-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check extension syntax
+        run: node --check vscode-extension/extension.js
+      - name: Install VSCode extension dependencies
+        working-directory: vscode-extension
+        run: npm install --no-audit --no-fund
+      - name: Package VSIX
+        working-directory: vscode-extension
+        run: npm run package
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: robottagram-ev3-connect-vsix
+          path: vscode-extension/*.vsix
+          if-no-files-found: error

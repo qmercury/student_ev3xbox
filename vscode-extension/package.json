@@ -1,0 +1,47 @@
+{
+  "name": "robottagram-ev3-connect",
+  "displayName": "Robottagram EV3 연결 도우미",
+  "description": "Cross-platform EV3 discovery and first-time SSH pairing inside VSCode",
+  "version": "0.1.0",
+  "publisher": "robottagram",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Education"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onCommand:robottagram.ev3Connect"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "robottagram.ev3Connect",
+        "title": "EV3: 최초 연결 도우미 열기",
+        "category": "Robottagram"
+      }
+    ]
+  },
+  "scripts": {
+    "check": "node --check extension.js",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qmercury/student_ev3xbox.git",
+    "directory": "vscode-extension"
+  },
+  "license": "UNLICENSED"
+}
